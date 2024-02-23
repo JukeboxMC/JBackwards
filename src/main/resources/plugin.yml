@@ -1,0 +1,4 @@
+main: org.jukeboxmc.plugin.backwards.JBackwardsPlugin
+name: JBackwards
+version: 1.0.0
+author: Kaooot
