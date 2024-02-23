@@ -17,12 +17,7 @@ repositories {
         name = "opencollab-snapshots"
         url = uri("https://repo.opencollab.dev/maven-snapshots/")
     }
-    maven("https://repo.jukeboxmc.eu/private") {
-        credentials {
-            username = properties["username"].toString()
-            password = properties["password"].toString()
-        }
-    }
+    maven("https://repo.jukeboxmc.eu/snapshots")
 }
 
 dependencies {
@@ -57,7 +52,7 @@ publishing {
         }
         repositories {
             maven {
-                url = uri("https://repo.jukeboxmc.eu/private")
+                url = uri("https://repo.jukeboxmc.eu/snapshots")
                 credentials.username = System.getenv("MAVEN_NAME")
                 credentials.password = System.getenv("MAVEN_SECRET")
             }
