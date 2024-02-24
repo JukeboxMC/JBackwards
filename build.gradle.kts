@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "org.jukeboxmc.plugin.backwards"
-version = "1.0.0-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -21,8 +21,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jukeboxmc:JukeboxMC-API:1.0.0-SNAPSHOT")
-    implementation("org.jukeboxmc:JukeboxMC-Server:1.0.0-SNAPSHOT")
+    compileOnly("org.jukeboxmc:JukeboxMC-API:1.0.0-SNAPSHOT")
+    compileOnly("org.jukeboxmc:JukeboxMC-Server:1.0.0-SNAPSHOT")
     implementation("org.jukeboxmc.mapping:item-mapping-generator:1.0.0-SNAPSHOT")
 }
 
