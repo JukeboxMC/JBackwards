@@ -125,12 +125,9 @@ class PacketSendListener : Listener {
                     val chunk = event.getPlayer().getWorld().getChunk(packet.chunkX, packet.chunkZ, event.getPlayer().getDimension())!!.toJukeboxChunk()
                     val buffer = Unpooled.buffer()
                     try {
-                        val method = chunk::class.java.getDeclaredMethod("writeTo", ByteBuf::class.java, RuntimeDataSerializer::class.java)
-                        method.isAccessible = true
-                        method.invoke(chunk, buffer.retain(), object : RuntimeDataSerializer<JukeboxBlock> {
+                        chunk.writeTo(buffer.retain(), object : RuntimeDataSerializer<JukeboxBlock> {
                             override fun serialize(value: JukeboxBlock): Int = BedrockMappingUtil.translateBlockRuntimeId(protocolVersion, value.getNetworkId(), true)
                         })
-
                         packet.data = buffer
                     } finally {
                         buffer.release()
