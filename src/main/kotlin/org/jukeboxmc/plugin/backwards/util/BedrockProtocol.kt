@@ -10,6 +10,7 @@ import org.cloudburstmc.protocol.bedrock.codec.v622.Bedrock_v622
 import org.cloudburstmc.protocol.bedrock.codec.v630.Bedrock_v630
 import org.cloudburstmc.protocol.bedrock.codec.v649.Bedrock_v649
 import org.cloudburstmc.protocol.bedrock.codec.v662.Bedrock_v662
+import org.cloudburstmc.protocol.bedrock.codec.v671.Bedrock_v671
 
 /**
  * @author Kaooot
@@ -30,6 +31,7 @@ object BedrockProtocol {
         this.supportedProtocols["1.20.50"] = Bedrock_v630.CODEC
         this.supportedProtocols["1.20.60"] = Bedrock_v649.CODEC
         this.supportedProtocols["1.20.70"] = Bedrock_v662.CODEC
+        this.supportedProtocols["1.20.80"] = Bedrock_v671.CODEC
 
         for (supportedProtocol in this.supportedProtocols) {
             this.codecByProtocol[supportedProtocol.value.protocolVersion] = supportedProtocol.value

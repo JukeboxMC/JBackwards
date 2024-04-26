@@ -11,6 +11,8 @@ import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleItemDefinition
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData
 import org.jukeboxmc.server.block.RuntimeBlockDefinition
 import org.jukeboxmc.server.util.BlockPalette
+import org.jukeboxmc.server.util.ItemPalette
+import org.jukeboxmc.server.util.PaletteUtil
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.io.Reader
@@ -101,9 +103,9 @@ object BedrockResourcesUtil {
 
     fun getEntityIdentifiers(protocolVersion: Int): NbtMap = this.entityIdentifiers[protocolVersion]
 
-    fun getItemDefinitions(protocolVersion: Int): List<ItemDefinition> = this.itemPalettes[protocolVersion]
+    fun getItemDefinitions(protocolVersion: Int): List<ItemDefinition> = this.itemPalettes[protocolVersion] ?: ItemPalette.getItemDefinitions()
 
-    fun getCreativeItems(protocolVersion: Int): List<ItemData> = this.creativeItems[protocolVersion]
+    fun getCreativeItems(protocolVersion: Int): List<ItemData> = this.creativeItems[protocolVersion] ?: PaletteUtil.getCreativeItems()
 
     private fun streamToNbtMap(inputStream: InputStream): NbtMap {
         NbtUtils.createNetworkReader(inputStream).use {
