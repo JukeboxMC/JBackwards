@@ -108,7 +108,7 @@ object BedrockResourcesUtil {
     fun getCreativeItems(protocolVersion: Int): List<ItemData> = this.creativeItems[protocolVersion] ?: PaletteUtil.getCreativeItems()
 
     private fun streamToNbtMap(inputStream: InputStream): NbtMap {
-        NbtUtils.createNetworkReader(inputStream).use {
+        NbtUtils.createGZIPReader(inputStream).use {
             return it.readTag() as NbtMap
         }
     }
