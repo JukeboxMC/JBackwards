@@ -1,6 +1,5 @@
 package org.jukeboxmc.plugin.backwards.listener
 
-import io.netty.buffer.ByteBuf
 import io.netty.buffer.Unpooled
 import org.cloudburstmc.protocol.bedrock.data.LevelEvent
 import org.cloudburstmc.protocol.bedrock.data.SoundEvent
@@ -9,7 +8,9 @@ import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData
 import org.cloudburstmc.protocol.bedrock.data.inventory.crafting.ContainerMixData
 import org.cloudburstmc.protocol.bedrock.data.inventory.crafting.PotionMixData
 import org.cloudburstmc.protocol.bedrock.data.inventory.crafting.recipe.*
+import org.cloudburstmc.protocol.bedrock.data.inventory.descriptor.ComplexAliasDescriptor
 import org.cloudburstmc.protocol.bedrock.data.inventory.descriptor.ItemDescriptorWithCount
+import org.cloudburstmc.protocol.bedrock.data.inventory.descriptor.ItemTagDescriptor
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryActionData
 import org.cloudburstmc.protocol.bedrock.packet.*
 import org.jukeboxmc.api.JukeboxMC
@@ -34,6 +35,7 @@ class PacketSendListener : Listener {
     @EventHandler
     fun onPacketSend(event: PacketSendEvent) {
         val packet = event.getBedrockPacket()
+        if (event.getPlayer().getSession().codec == null) return
         val protocolVersion = event.getPlayer().getSession().codec.protocolVersion
         val condition = protocolVersion != BedrockServer.BEDROCK_CODEC.protocolVersion
 
@@ -49,24 +51,24 @@ class PacketSendListener : Listener {
                 event.getPlayer().getSession().setCompression(networkSettingsPacket.compressionAlgorithm)
             }, 1)
 
-            println("allow join although the clients protocol is older than the servers")
+            //println("allow join although the clients protocol is older than the servers")
         }
 
         if (condition) {
             when (packet) {
                 is AvailableEntityIdentifiersPacket -> {
                     packet.identifiers = BedrockResourcesUtil.getEntityIdentifiers(protocolVersion)
-                    println("send entity identifiers for v$protocolVersion")
+                    //println("send entity identifiers for v$protocolVersion")
                 }
 
                 is BiomeDefinitionListPacket -> {
                     packet.definitions = BedrockResourcesUtil.getBiomeDefinitions(protocolVersion)
-                    println("send biome definitions for v$protocolVersion")
+                    //println("send biome definitions for v$protocolVersion")
                 }
 
                 is StartGamePacket -> {
                     packet.itemDefinitions = BedrockResourcesUtil.getItemDefinitions(protocolVersion)
-                    println("send item definitions for v$protocolVersion")
+                    //println("send item definitions for v$protocolVersion")
                 }
 
                 is CreativeContentPacket -> {
@@ -75,7 +77,7 @@ class PacketSendListener : Listener {
                         items.add(BedrockMappingUtil.translateItem(protocolVersion, creativeItem, true))
                     }
                     packet.contents = items.toTypedArray()
-                    println("send creative items for v$protocolVersion")
+                    //println("send creative items for v$protocolVersion")
                 }
 
                 is InventoryContentPacket -> {
@@ -135,65 +137,81 @@ class PacketSendListener : Listener {
                 }
 
                 is CraftingDataPacket -> {
-                    val craftingData = ArrayList<RecipeData>()
+                    val craftingDataList = ArrayList<RecipeData>()
 
-                    for (datum in packet.craftingData) {
-                        var craftingDatum = datum
-                        when (craftingDatum) {
+                    for (data in packet.craftingData) {
+                        var craftingData = data
+                        when (craftingData) {
                             is CraftingRecipeData -> {
                                 val ingredients = ArrayList<ItemDescriptorWithCount>()
                                 val results = ArrayList<ItemData>()
 
-                                for (ingredient in craftingDatum.ingredients) {
-                                    ingredients.add(ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, ingredient.toItem(), true)))
+                                for (ingredient in craftingData.ingredients) {
+                                    when (ingredient.descriptor) {
+                                        is ItemTagDescriptor -> {
+                                            val itemTagDescriptor = ingredient.descriptor as ItemTagDescriptor
+                                            ingredients.add(ItemDescriptorWithCount(ItemTagDescriptor(itemTagDescriptor.itemTag), ingredient.count))
+                                        }
+
+                                        is ComplexAliasDescriptor -> {
+                                            val complexAliasDescriptor = ingredient.descriptor as ComplexAliasDescriptor
+                                            ingredients.add(ItemDescriptorWithCount(ComplexAliasDescriptor(complexAliasDescriptor.name), ingredient.count))
+                                        }
+
+                                        else -> {
+                                            ingredients.add(ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, ingredient.toItem(), true)))
+                                        }
+                                    }
                                 }
 
-                                for (result in craftingDatum.results) {
+                                for (result in craftingData.results) {
                                     results.add(BedrockMappingUtil.translateItem(protocolVersion, result, true))
                                 }
 
-                                craftingDatum.ingredients.clear()
-                                craftingDatum.ingredients.addAll(ingredients)
-                                craftingDatum.results.clear()
-                                craftingDatum.results.addAll(results)
+                                craftingData.ingredients.clear()
+                                craftingData.ingredients.addAll(ingredients)
+                                craftingData.results.clear()
+                                craftingData.results.addAll(results)
                             }
 
                             is FurnaceRecipeData -> {
-                                val input = BedrockMappingUtil.translateItem(protocolVersion, ItemData.builder().definition(SimpleItemDefinition("", craftingDatum.inputId, false)).damage(craftingDatum.inputData).build(), true)
-                                val result = BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.result, true)
+                                val input = BedrockMappingUtil.translateItem(protocolVersion, ItemData.builder().definition(SimpleItemDefinition("", craftingData.inputId, false)).damage(craftingData.inputData).build(), true)
+                                val result = BedrockMappingUtil.translateItem(protocolVersion, craftingData.result, true)
 
-                                craftingDatum = FurnaceRecipeData.of(input.definition.runtimeId, input.damage, result, craftingDatum.tag)
+                                craftingData = FurnaceRecipeData.of(input.definition.runtimeId, input.damage, result, craftingData.tag)
                             }
 
                             is SmithingTransformRecipeData -> {
-                                craftingDatum = SmithingTransformRecipeData.of(
-                                    craftingDatum.id,
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.template.toItem(), true)),
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.base.toItem(), true)),
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.addition.toItem(), true)),
-                                    BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.result, true),
-                                    craftingDatum.tag,
-                                    craftingDatum.netId
+                                craftingData = SmithingTransformRecipeData.of(
+                                    craftingData.id,
+                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.template.toItem(), true)),
+                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.base.toItem(), true)),
+                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.addition.toItem(), true)),
+                                    BedrockMappingUtil.translateItem(protocolVersion, craftingData.result, true),
+                                    craftingData.tag,
+                                    craftingData.netId
                                 )
                             }
 
                             is SmithingTrimRecipeData -> {
-                                craftingDatum = SmithingTrimRecipeData.of(
-                                    craftingDatum.id,
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.template.toItem(), true)),
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.base.toItem(), true)),
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingDatum.addition.toItem(), true)),
-                                    craftingDatum.tag,
-                                    craftingDatum.netId
+                                /*
+                                craftingData = SmithingTrimRecipeData.of(
+                                    craftingData.id,
+                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.template.toItem(), true)),
+                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.base.toItem(), true)),
+                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.addition.toItem(), true)),
+                                    craftingData.tag,
+                                    craftingData.netId
                                 )
+                                 */
                             }
                         }
 
-                        craftingData.add(craftingDatum)
+                        craftingDataList.add(craftingData)
                     }
 
                     packet.craftingData.clear()
-                    packet.craftingData.addAll(craftingData)
+                    packet.craftingData.addAll(craftingDataList)
 
                     val potionMixData = ArrayList<PotionMixData>()
 

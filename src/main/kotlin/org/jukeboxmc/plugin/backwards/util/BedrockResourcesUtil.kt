@@ -9,6 +9,8 @@ import org.cloudburstmc.nbt.NbtUtils
 import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition
 import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleItemDefinition
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData
+import org.jukeboxmc.plugin.backwards.data.NbtReaderType
+import org.jukeboxmc.plugin.backwards.data.ProtocolData
 import org.jukeboxmc.server.block.RuntimeBlockDefinition
 import org.jukeboxmc.server.util.BlockPalette
 import org.jukeboxmc.server.util.ItemPalette
@@ -34,8 +36,8 @@ object BedrockResourcesUtil {
 
         for (protocol in BedrockProtocol.getSupportedProtocols()) {
             val fileVersion = protocol.key.replace(".", "_")
-            val version = protocol.value.minecraftVersion
-            val protocolVersion = protocol.value.protocolVersion
+            val version = protocol.value.codec.minecraftVersion
+            val protocolVersion = protocol.value.codec.protocolVersion
             val biomeDefinitions = this::class.java.classLoader.getResourceAsStream("bedrock/biome_definitions/biome_definitions.$fileVersion.dat") ?: throw RuntimeException("Could not find biome definitions for $version")
             val entityIdentifiers = this::class.java.classLoader.getResourceAsStream("bedrock/entity_identifiers/entity_identifiers.$fileVersion.dat") ?: throw RuntimeException("Could not find entity identifiers for $version")
             val itemPalette = this::class.java.classLoader.getResourceAsStream("bedrock/item_palette/item_palette.$fileVersion.json") ?: throw RuntimeException("Could not find item palette for $version")
@@ -51,8 +53,8 @@ object BedrockResourcesUtil {
                 }
             }
 
-            this.biomeDefinitions[protocolVersion] = this.streamToNbtMap(biomeDefinitions)
-            this.entityIdentifiers[protocolVersion] = this.streamToNbtMap(entityIdentifiers)
+            this.biomeDefinitions[protocolVersion] = this.streamToNbtMap(biomeDefinitions, protocol.value.biomeDefinitionReaderType)
+            this.entityIdentifiers[protocolVersion] = this.streamToNbtMap(entityIdentifiers, protocol.value.entityIdentifierReaderType)
             this.itemPalettes[protocolVersion] = itemDefinitions
 
             creativeItems.reader().use {
@@ -107,9 +109,15 @@ object BedrockResourcesUtil {
 
     fun getCreativeItems(protocolVersion: Int): List<ItemData> = this.creativeItems[protocolVersion] ?: PaletteUtil.getCreativeItems()
 
-    private fun streamToNbtMap(inputStream: InputStream): NbtMap {
-        NbtUtils.createGZIPReader(inputStream).use {
-            return it.readTag() as NbtMap
+    private fun streamToNbtMap(inputStream: InputStream, readerType: NbtReaderType): NbtMap {
+        if (readerType == NbtReaderType.GZIP) {
+            NbtUtils.createGZIPReader(inputStream).use {
+                return it.readTag() as NbtMap
+            }
+        } else {
+            NbtUtils.createNetworkReader(inputStream).use {
+                return it.readTag() as NbtMap
+            }
         }
     }
 

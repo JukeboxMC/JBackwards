@@ -52,7 +52,7 @@ object BedrockMappingUtil {
                 continue
             }
 
-            val protocolVersion = protocol.value.protocolVersion
+            val protocolVersion = protocol.value.codec.protocolVersion
             val itemMappings = this::class.java.classLoader.getResourceAsStream("bedrock/mapping_items/item_mapping_${protocolVersion}_to_${maxCodecProtocol}.json") ?: throw RuntimeException("Could not find item mappings for ${protocol.key}")
 
             itemMappings.reader().use {
