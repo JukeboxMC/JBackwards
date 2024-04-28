@@ -33,6 +33,9 @@ object BedrockResourcesUtil {
         val gson = Gson()
 
         for (protocol in BedrockProtocol.getSupportedProtocols()) {
+            if (protocol.value == BedrockProtocol.getMaxCodec()) {
+                continue
+            }
             val fileVersion = protocol.key.replace(".", "_")
             val version = protocol.value.minecraftVersion
             val protocolVersion = protocol.value.protocolVersion
@@ -99,9 +102,9 @@ object BedrockResourcesUtil {
         }
     }
 
-    fun getBiomeDefinitions(protocolVersion: Int): NbtMap = this.biomeDefinitions[protocolVersion]
+    fun getBiomeDefinitions(protocolVersion: Int): NbtMap = this.biomeDefinitions[protocolVersion] ?: PaletteUtil.getBiomeDefinitions()
 
-    fun getEntityIdentifiers(protocolVersion: Int): NbtMap = this.entityIdentifiers[protocolVersion]
+    fun getEntityIdentifiers(protocolVersion: Int): NbtMap = this.entityIdentifiers[protocolVersion] ?: PaletteUtil.getEntityIdentifiers()
 
     fun getItemDefinitions(protocolVersion: Int): List<ItemDefinition> = this.itemPalettes[protocolVersion] ?: ItemPalette.getItemDefinitions()
 
