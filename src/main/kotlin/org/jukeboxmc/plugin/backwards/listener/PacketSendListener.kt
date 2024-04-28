@@ -194,16 +194,14 @@ class PacketSendListener : Listener {
                             }
 
                             is SmithingTrimRecipeData -> {
-                                /*
                                 craftingData = SmithingTrimRecipeData.of(
                                     craftingData.id,
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.template.toItem(), true)),
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.base.toItem(), true)),
-                                    ItemDescriptorWithCount.fromItem(BedrockMappingUtil.translateItem(protocolVersion, craftingData.addition.toItem(), true)),
+                                    ItemDescriptorWithCount(craftingData.base.descriptor, craftingData.base.count),
+                                    ItemDescriptorWithCount(craftingData.addition.descriptor, craftingData.addition.count),
+                                    ItemDescriptorWithCount(craftingData.template.descriptor, craftingData.template.count),
                                     craftingData.tag,
                                     craftingData.netId
                                 )
-                                 */
                             }
                         }
 
